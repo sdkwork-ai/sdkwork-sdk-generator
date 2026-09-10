@@ -15,10 +15,25 @@ export class BuildConfigGenerator {
       path: 'Cargo.toml',
       content: this.format(`[workspace]
 
+[workspace.package]
+rust-version = "1.85"
+
+[workspace.lints.rust]
+# Generated-client baseline (RUST_CODE_SPEC §13): generated code contains no
+# unsafe. Keep this manifest self-contained so the crate is a valid standalone
+# workspace root and a valid path dependency.
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+
 [package]
 name = "${packageName}"
 version = "${config.version}"
 edition = "2021"
+rust-version.workspace = true
 description = "${escapeToml(config.description || `${config.name} SDK`)}"
 license = "${config.license || 'MIT'}"
 authors = ["${escapeToml(config.author || 'SDKWork Team')}"]
@@ -26,6 +41,9 @@ authors = ["${escapeToml(config.author || 'SDKWork Team')}"]
 [lib]
 name = "${crateName}"
 path = "src/lib.rs"
+
+[lints]
+workspace = true
 
 [dependencies]
 reqwest = { version = "0.13", default-features = false, features = ["form", "json", "multipart", "query", "rustls"] }
