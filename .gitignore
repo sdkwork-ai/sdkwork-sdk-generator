@@ -69,7 +69,6 @@ rust/Cargo.lock
 **/pubspec.lock
 
 # Local artifacts at repo root
-/bin/
 
 # SDKWork local environment and runtime config overrides
 .env.local
