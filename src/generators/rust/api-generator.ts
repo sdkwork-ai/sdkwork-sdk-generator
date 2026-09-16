@@ -116,6 +116,13 @@ export class ApiGenerator {
       return allParameters.some((param: any) => param?.in === 'querystring')
         || allParameters.some((param: any) => param?.in === 'query' && requiresExplicitOpenApiQuerySerialization(param));
     });
+    // Vendor-native modules (e.g. `/kling/v1/videos/avatar`) build their paths
+    // verbatim and never call the prefix helper. Importing it unconditionally
+    // leaves an unused import, and this crate's gates treat warnings as errors.
+    const needsApiPath = operations.some((op) => {
+      const firstPathSegment = op.path.split('/').filter(Boolean)[0] ?? '';
+      return !this.vendorPathPrefixes.includes(firstPathSegment);
+    });
     const needsCustomMethod = operations.some((op) => !['get', 'post', 'put', 'patch', 'delete'].includes(String(op.method || '').toLowerCase()));
     const needsEventStream = operations.some((op) => Boolean(extractEventStreamResponseInfo(op)));
     const needsBinaryResponse = operations.some((op) => Boolean(extractBinaryResponseInfo(op, this.schemas)));
@@ -132,8 +139,7 @@ export class ApiGenerator {
       path: `src/api/${apiName.moduleName}.rs`,
       content: this.format(`use std::sync::Arc;
 
-${needsMethodImport ? 'use reqwest::Method;\n\n' : ''}${typeImports.size > 0 ? `use crate::api::base::{${Array.from(typeImports).sort().join(', ')}};\n` : ''}use crate::api::paths::${pathFunction};
-${needsAppendQueryString ? 'use crate::api::paths::append_query_string;\n' : ''}use crate::http::{SdkworkError, SdkworkHttpClient${needsEventStream ? ', SseStream' : ''}${needsBinaryResponse ? ', BinaryResponseStream' : ''}};
+${needsMethodImport ? 'use reqwest::Method;\n\n' : ''}${typeImports.size > 0 ? `use crate::api::base::{${Array.from(typeImports).sort().join(', ')}};\n` : ''}${needsApiPath ? `use crate::api::paths::${pathFunction};\n` : ''}${needsAppendQueryString ? 'use crate::api::paths::append_query_string;\n' : ''}use crate::http::{SdkworkError, SdkworkHttpClient${needsEventStream ? ', SseStream' : ''}${needsBinaryResponse ? ', BinaryResponseStream' : ''}};
 ${modelImports}
 #[derive(Clone)]
 pub struct ${apiName.structName} {

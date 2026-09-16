@@ -212,11 +212,20 @@ export class ApiGenerator {
     const typeImports = referencedModels.size > 0
       ? `import type { ${Array.from(referencedModels).sort((a, b) => a.localeCompare(b)).join(', ')} } from '../types';\n`
       : '';
+    // Vendor-native modules (e.g. `/kling/v1/videos/avatar`) build their paths
+    // verbatim and never call the prefix helper, so importing it would leave an
+    // unused binding behind.
+    const needsApiPathImport = operations.some((op) => {
+      const firstPathSegment = op.path.split('/').filter(Boolean)[0] ?? '';
+      return !this.vendorPathPrefixes.includes(firstPathSegment);
+    });
+    const apiPathImport = needsApiPathImport
+      ? `import { ${config.sdkType}ApiPath } from './paths';\n`
+      : '';
 
     return {
       path: `src/api/${fileName}.ts`,
-      content: this.format(`import { ${config.sdkType}ApiPath } from './paths';
-import type { ApiRequestOptions, HttpClient } from '../http/client';
+      content: this.format(`${apiPathImport}import type { ApiRequestOptions, HttpClient } from '../http/client';
 ${needsQueryParamsImport ? "import type { QueryParams } from '../types/common';" : ''}
 ${typeImports}
 

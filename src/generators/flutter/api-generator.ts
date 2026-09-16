@@ -86,6 +86,9 @@ export class ApiGenerator {
     const responseHelperImport = operations.some((op) => this.methodNeedsResponseHelpers(op))
       ? "import 'response_helpers.dart';\n"
       : '';
+    // Vendor-native modules build their paths verbatim, so a file whose methods
+    // never mention the `ApiPaths` helper has nothing to import from `paths.dart`.
+    const apiPathsImport = methods.includes('ApiPaths.') ? "import 'paths.dart';\n" : '';
     const modelsImport = operations.some((op) => this.methodUsesModels(op, knownModels))
       ? "import '../models.dart';\n"
       : '';
@@ -104,8 +107,7 @@ export class ApiGenerator {
       path: `lib/src/api/${fileName}.dart`,
       content: this.format(`${dartConvertImport}import '../http/client.dart';
 ${modelsImport}
-import 'paths.dart';
-${responseHelperImport}
+${apiPathsImport}${responseHelperImport}
 
 class ${className} {
   final HttpClient _client;
