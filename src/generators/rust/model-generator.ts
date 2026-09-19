@@ -8,7 +8,7 @@ import {
   resolveModelSchema,
 } from '../../framework/schema.js';
 import { RUST_CONFIG, getRustType } from './config.js';
-import { sanitizeRustRawIdentifier } from './identifiers.js';
+import { sanitizeRustRawIdentifier, renderRustDocComment } from './identifiers.js';
 
 interface RustOneOfVariant {
   discriminatorValue: string;
@@ -136,12 +136,13 @@ pub struct Page<T> {
       ? properties.map(([propName, propSchema]) => this.generateField(propName, propSchema, required, modelName)).join('\n\n')
       : '    #[serde(flatten)]\n    pub additional_properties: std::collections::HashMap<String, serde_json::Value>,';
 
-    const docComment = modelSchema?.description ? `/// ${String(modelSchema.description).trim()}\n` : '';
+    const docComment = renderRustDocComment(modelSchema?.description);
+    const docCommentBlock = docComment ? `${docComment}\n` : '';
     return {
       path: `src/models/${fileName}.rs`,
       content: this.format(`use serde::{Deserialize, Serialize};
 
-${modelImports}${docComment}#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+${modelImports}${docCommentBlock}#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct ${modelName} {
 ${fields}
 }`),
@@ -245,12 +246,10 @@ ${defaultImpl}`),
       attributes.push('#[serde(default, skip_serializing_if = "Option::is_none")]');
     }
 
-    const docComment = propSchema?.description
-      ? `/// ${String(propSchema.description).trim()}`
-      : '';
+    const docComment = renderRustDocComment(propSchema?.description);
+    const docLines = docComment ? docComment.split('\n') : [];
 
-    return [docComment, ...attributes, `pub ${normalizedName}: ${renderedType},`]
-      .filter(Boolean)
+    return [...docLines, ...attributes, `pub ${normalizedName}: ${renderedType},`]
       .map((line) => `    ${line}`)
       .join('\n');
   }

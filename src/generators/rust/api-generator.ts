@@ -21,7 +21,7 @@ import {
 } from '../../framework/sdkwork-v3-auth.js';
 import { resolveSdkworkV3ConsumerSchema } from '../../framework/sdkwork-v3-envelope.js';
 import { RUST_CONFIG, getRustType } from './config.js';
-import { resolveRustApiNames, sanitizeRustRawIdentifier, type RustApiName } from './identifiers.js';
+import { resolveRustApiNames, sanitizeRustRawIdentifier, renderRustDocComment, type RustApiName } from './identifiers.js';
 
 interface NamedParameterBinding {
   parameter: any;
@@ -350,7 +350,7 @@ ${needsPercentEncodeHelper ? `\n${this.generatePercentEncodeHelper()}` : ''}`),
       clientCall = `self.client.request_bytes(${methodExpression}, &path, ${hasBody ? 'Some(body)' : 'Option::<&serde_json::Value>::None'}, ${queryArg}, ${headersArg}, ${contentTypeArg}, ${skipAuthArg}, ${accessTokenOnlyArg}).await`;
       const streamClientCall = `self.client.request_bytes_stream(${methodExpression}, &path, ${hasBody ? 'Some(body)' : 'Option::<&serde_json::Value>::None'}, ${queryArg}, ${headersArg}, ${contentTypeArg}, ${skipAuthArg}, ${accessTokenOnlyArg}).await`;
       const docComment = op.summary
-        ? `/// ${String(op.summary).trim()}\n`
+        ? `${renderRustDocComment(op.summary)}\n`
         : '';
       const params = signatureParams.length > 0 ? `, ${signatureParams.join(', ')}` : '';
       const requestHeaderBlock = hasHeaders
@@ -383,7 +383,7 @@ ${requestHeaderBlock}    ${streamClientCall}
     }
 
     const docComment = op.summary
-      ? `/// ${String(op.summary).trim()}\n`
+      ? `${renderRustDocComment(op.summary)}\n`
       : '';
     const params = signatureParams.length > 0 ? `, ${signatureParams.join(', ')}` : '';
     const requestHeaderBlock = hasHeaders

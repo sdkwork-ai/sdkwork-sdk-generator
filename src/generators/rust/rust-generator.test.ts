@@ -364,6 +364,60 @@ const rustQueryOnlySerializationSpec: ApiSpec = {
   components: { schemas: {} },
 };
 
+// A YAML block scalar in the contract arrives here with embedded newlines.
+// Every physical line must be re-emitted behind its own `///` marker, otherwise
+// the generated crate contains raw source lines and `cargo check` fails with
+// `unknown start of token`.
+const rustMultiLineDocSpec: ApiSpec = {
+  openapi: '3.0.3',
+  info: {
+    title: 'Rust multi-line doc regression',
+    version: '1.0.0',
+  },
+  paths: {
+    '/backend/v3/api/webserver/applications/{applicationId}': {
+      get: {
+        summary: 'Read one application.\nSecond summary line.',
+        operationId: 'webserver.applications.retrieve',
+        tags: ['Application'],
+        parameters: [
+          {
+            name: 'applicationId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Success',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ApplicationResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  components: {
+    schemas: {
+      ApplicationResponse: {
+        type: 'object',
+        description: 'Struct level line one\nStruct level line two',
+        properties: {
+          hasSourceVersion: {
+            type: 'boolean',
+            description: 'Whether the application already has a source version. The application\nlist and detail projections derive it in a single `EXISTS` query over\n`webserver_source_version`, so callers never probe\n`applications/{applicationId}/source_versions` row by row.\n',
+          },
+          status: { type: 'integer' },
+        },
+      },
+    },
+  },
+};
+
 describe('Rust generator', () => {
   it('emits rust smoke tests and aligns README quick start when generateTests is enabled', async () => {
     const generator = getGenerator('rust' as any);
@@ -615,5 +669,43 @@ describe('Rust generator', () => {
     expect(mediaContentPartFile!.content).toContain('pub resource: MediaResource,');
     expect(mediaContentPartFile!.content).not.toContain('pub drive: Option<DriveReference>');
     expect(mediaContentPartFile!.content).not.toContain('pub resource: Option<MediaResource>');
+  });
+
+  it('prefixes every line of a multi-line description and summary with a rust doc marker', async () => {
+    const generator = getGenerator('rust' as any);
+    expect(generator).toBeDefined();
+
+    const result = await generator!.generate(rustConfig, rustMultiLineDocSpec);
+    const modelFile = result.files.find((file) => file.path === 'src/models/application_response.rs');
+
+    expect(result.errors).toEqual([]);
+    expect(modelFile).toBeDefined();
+
+    const modelContent = modelFile!.content;
+
+    // Struct-level doc: both lines carry their own marker.
+    expect(modelContent).toContain('/// Struct level line one');
+    expect(modelContent).toContain('/// Struct level line two');
+
+    // Field-level doc: continuation lines stay indented and still carry `///`.
+    expect(modelContent).toContain('    /// Whether the application already has a source version. The application');
+    expect(modelContent).toContain('    /// list and detail projections derive it in a single `EXISTS` query over');
+    expect(modelContent).toContain('    /// `webserver_source_version`, so callers never probe');
+    expect(modelContent).toContain('    /// `applications/{applicationId}/source_versions` row by row.');
+    expect(modelContent).toContain('    pub has_source_version: Option<bool>,');
+
+    // No continuation line may leak into the crate as raw source.
+    expect(modelContent).not.toMatch(/^`/m);
+    expect(modelContent).not.toMatch(/^list and detail/m);
+    expect(modelContent).not.toMatch(/^Struct level line two/m);
+
+    // Operation summary goes through the same helper.
+    const joinedApi = result.files
+      .filter((file) => file.path.startsWith('src/api/'))
+      .map((file) => file.content)
+      .join('\n');
+    expect(joinedApi).toContain('/// Read one application.');
+    expect(joinedApi).toContain('/// Second summary line.');
+    expect(joinedApi).not.toMatch(/^Second summary line\./m);
   });
 });
