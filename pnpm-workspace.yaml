@@ -22,6 +22,9 @@ packages:
   - "../sdkwork-sdk-commons/sdkwork-sdk-common-typescript"
   - "../sdkwork-utils/packages/sdkwork-utils-typescript"
 
+allowBuilds:
+  esbuild: set this to true or false
+
 catalog:
   react: ^19.2.8
   react-dom: ^19.2.8
