@@ -23,6 +23,7 @@ import {
   validateSdkworkV3Standard,
 } from './sdkwork-v3-standard.js';
 import { normalizeSdkworkV3AuthSurface } from './sdkwork-v3-auth-normalizer.js';
+import { excludeExternalProtocolOperations } from './external-protocol.js';
 import {
   parseLocalJsonPointerRef,
   resolveLocalJsonPointerReference,
@@ -182,6 +183,10 @@ export abstract class BaseGenerator {
           'OpenAPI document has no paths. This usually means the source group endpoint is empty or misconfigured.'
         );
       }
+
+      // Mirrored third-party wires (API_SPEC §4.5.2) are not SDK surface:
+      // strip them before capability analysis, validation, and emission.
+      excludeExternalProtocolOperations(spec);
 
       const compatibilityIssues = this.analyzeSpecCapabilities(spec);
       if (compatibilityIssues.length > 0) {

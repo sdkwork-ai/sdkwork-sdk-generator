@@ -4,6 +4,14 @@ import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
 import { SDK_GENERATOR_VITE_EXTERNALS } from './src/vite-config-shared.js';
 
+function resolveViteEnvironment(mode: string | undefined, processEnv = process.env) {
+  const profileMatch = /^(standalone|cloud)\.(development|test|staging|production)$/u.exec(mode ?? '');
+  return profileMatch?.[2]
+    ?? (['development', 'test', 'staging', 'production'].includes(processEnv.SDKWORK_ENVIRONMENT ?? '')
+      ? (processEnv.SDKWORK_ENVIRONMENT ?? 'production')
+      : 'production');
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '');
   const bootstrapAccessToken = env.SDKWORK_ACCESS_TOKEN ?? process.env.SDKWORK_ACCESS_TOKEN;
