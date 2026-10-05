@@ -538,8 +538,14 @@ describe('Rust generator', () => {
 
     expect(result.errors).toEqual([]);
     expect(cargoFile).toBeDefined();
+    // The generated crate is a standalone workspace ROOT: the `[workspace]`
+    // tables come first (shared rust-version + generated-client lint
+    // baseline), and the crate's own `[package]` inherits from them
+    // (`rust-version.workspace = true`).
     expect(cargoFile!.content).toContain('[workspace]');
-    expect(cargoFile!.content).toMatch(/\[workspace\]\s*\n\s*\[package\]/);
+    expect(cargoFile!.content).toContain('[workspace.package]');
+    expect(cargoFile!.content).toContain('[package]');
+    expect(cargoFile!.content).toContain('rust-version.workspace = true');
   });
 
   it('emits primitive and percent helpers for path-only rust serialization', async () => {
