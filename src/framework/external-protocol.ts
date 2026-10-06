@@ -1,9 +1,8 @@
 import type { ApiSpec } from './types.js';
+import { OPENAPI_FIXED_HTTP_METHOD_SET } from './http-methods.js';
 
 const WIRE_PROTOCOL_EXTENSION = 'x-sdkwork-wire-protocol';
 const EXTERNAL_PROTOCOL_ID_EXTENSION = 'x-sdkwork-external-protocol-id';
-
-const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
 
 /**
  * An operation carrying the API_SPEC §4.5.2 external wire marker pair mirrors a
@@ -33,12 +32,26 @@ export function excludeExternalProtocolOperations(spec: ApiSpec): void {
   for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
     const item = (pathItem ?? {}) as Record<string, unknown>;
     let retainsOwnedOperation = false;
-    for (const method of Object.keys(item)) {
-      if (!HTTP_METHODS.has(method.toLowerCase())) {
+    for (const [field, value] of Object.entries(item)) {
+      // OpenAPI 3.2 stores non-standard methods under `additionalOperations`;
+      // each entry is an operation that can individually carry the external
+      // wire marker pair.
+      if (field === 'additionalOperations' && isPlainObject(value)) {
+        for (const [token, operation] of Object.entries(value as Record<string, unknown>)) {
+          if (isExternalProtocolOperation(operation)) {
+            delete (value as Record<string, unknown>)[token];
+            removedExternalOperation = true;
+          } else {
+            retainsOwnedOperation = true;
+          }
+        }
         continue;
       }
-      if (isExternalProtocolOperation(item[method])) {
-        delete item[method];
+      if (!OPENAPI_FIXED_HTTP_METHOD_SET.has(field.toLowerCase())) {
+        continue;
+      }
+      if (isExternalProtocolOperation(value)) {
+        delete item[field];
         removedExternalOperation = true;
       } else {
         retainsOwnedOperation = true;
@@ -51,6 +64,10 @@ export function excludeExternalProtocolOperations(spec: ApiSpec): void {
   if (removedExternalOperation) {
     pruneSchemasOnlyTheRemovedWireReferenced(spec);
   }
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 const LOCAL_SCHEMA_REF_PREFIX = '#/components/schemas/';
