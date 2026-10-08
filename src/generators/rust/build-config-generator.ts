@@ -19,20 +19,32 @@ export class BuildConfigGenerator {
 rust-version = "1.85"
 
 [workspace.lints.rust]
-# Generated-client baseline (RUST_CODE_SPEC §13): generated code contains no
-# unsafe. Keep this manifest self-contained so the crate is a valid standalone
-# workspace root and a valid path dependency.
-unsafe_code = "deny"
+# Generated-client baseline (RUST_CODE_SPEC §13 recommended block, narrowed to
+# what generated code can satisfy without local allows). Generated code contains
+# no unsafe and no panic/unwrap/expect paths; keep this manifest self-contained
+# so the crate is a valid standalone workspace root and a valid path dependency.
+unsafe_code = "forbid"
+unsafe_op_in_unsafe_fn = "deny"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+unused_qualifications = "warn"
 
 [workspace.lints.clippy]
+all = "warn"
 dbg_macro = "deny"
 todo = "deny"
 unimplemented = "deny"
+panic = "deny"
+unwrap_used = "deny"
+expect_used = "deny"
+exit = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
 
 [package]
 name = "${packageName}"
 version = "${config.version}"
-edition = "2021"
+edition = "2024"
 rust-version.workspace = true
 description = "${escapeToml(config.description || `${config.name} SDK`)}"
 license = "${config.license || 'MIT'}"

@@ -460,7 +460,27 @@ function createRustPackageScaffoldFiles(config: GeneratorConfig): GeneratedFile[
         '[package]',
         `name = "${packageName}"`,
         `version = "${config.version}"`,
-        'edition = "2021"',
+        'edition = "2024"',
+        '',
+        '# Generated RPC-client baseline (RUST_CODE_SPEC §13, self-contained workspace',
+        '# root so the crate is a valid standalone path dependency).',
+        '[workspace.lints.rust]',
+        'unsafe_code = "forbid"',
+        'unsafe_op_in_unsafe_fn = "deny"',
+        'trivial_casts = "warn"',
+        'trivial_numeric_casts = "warn"',
+        '',
+        '[workspace.lints.clippy]',
+        'dbg_macro = "deny"',
+        'todo = "deny"',
+        'unimplemented = "deny"',
+        'panic = "deny"',
+        'unwrap_used = "deny"',
+        'expect_used = "deny"',
+        '',
+        '[lints]',
+        'workspace = true',
+        '',
         '',
         '[workspace]',
         '',
@@ -715,6 +735,11 @@ interface RustModuleNode {
 
 function renderRustModuleChildren(node: RustModuleNode, depth: number): string[] {
   const lines: string[] = [];
+  if (depth === 0) {
+    // Protobuf codegen output (buf/prost) does not satisfy the generated-client
+    // lint baseline; scope the exemptions to the generated modules only.
+    lines.push('#[allow(warnings)]');
+  }
   for (const [moduleName, child] of Array.from(node.children).sort(([left], [right]) => left.localeCompare(right))) {
     const indent = '  '.repeat(depth);
     lines.push(`${indent}pub mod ${moduleName} {`);
