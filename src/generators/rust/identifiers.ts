@@ -40,6 +40,24 @@ export const RUST_RESERVED_WORDS = new Set([
   'async',
   'await',
   'dyn',
+  // Reserved keywords that are not currently used by the language but cannot be
+  // identifiers in Rust 2021/2024. A contract property such as WeChat's
+  // `abstract` must be escaped (the generator appends `_` and keeps the wire
+  // name through serde rename) instead of producing uncompilable output.
+  'abstract',
+  'become',
+  'box',
+  'do',
+  'final',
+  'gen',
+  'macro',
+  'override',
+  'priv',
+  'try',
+  'typeof',
+  'unsized',
+  'virtual',
+  'yield',
 ]);
 
 export interface RustApiName {
