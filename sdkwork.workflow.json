@@ -6,7 +6,7 @@
     "name": "sdkwork-sdk-generator",
     "repository": "sdkwork-ai/sdkwork-sdk-generator",
     "sourcePath": ".",
-    "configPath": "sdkwork.app.config.json"
+    "configPath": "agent.app.config.json"
   },
   "release": {
     "artifactPrefix": "sdkwork-sdk-generator",
