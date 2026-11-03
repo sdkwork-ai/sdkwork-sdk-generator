@@ -151,23 +151,6 @@
       "managedBy": "apps/scripts/initialize-sdkwork-app-standard-v3.mjs"
     }
   },
-  "environments": {
-    "development": {
-      "accessUrl": "https://api-dev.sdkwork.com/apps/sdkwork-sdk-generator",
-      "deployUrl": "https://api-dev.sdkwork.com/apps/sdkwork-sdk-generator",
-      "deployEnv": "dev"
-    },
-    "test": {
-      "accessUrl": "https://api-test.sdkwork.com/apps/sdkwork-sdk-generator",
-      "deployUrl": "https://api-test.sdkwork.com/apps/sdkwork-sdk-generator",
-      "deployEnv": "test"
-    },
-    "production": {
-      "accessUrl": "https://api.sdkwork.com/apps/sdkwork-sdk-generator",
-      "deployUrl": "https://api.sdkwork.com/apps/sdkwork-sdk-generator",
-      "deployEnv": "production"
-    }
-  },
   "artifacts": {
     "installConfig": {
       "defaultPackageId": "web-universal-cloud-browser-zip",
@@ -305,6 +288,7 @@
   },
   "metadata": {
     "standardOwner": "sdkwork-platform",
-    "initializedAt": "2026-05-07T00:00:00Z"
+    "initializedAt": "2026-05-07T00:00:00Z",
+    "deploymentConfig": "etc/sdkwork.deployment.config.json"
   }
 }
