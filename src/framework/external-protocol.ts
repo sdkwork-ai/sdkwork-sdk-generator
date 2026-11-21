@@ -66,11 +66,46 @@ export function excludeExternalProtocolOperations(spec: ApiSpec): void {
   }
 }
 
+function hasOwnedOperation(spec: ApiSpec): boolean {
+  for (const pathItem of Object.values(spec.paths ?? {})) {
+    const item = (pathItem ?? {}) as Record<string, unknown>;
+    for (const [field, value] of Object.entries(item)) {
+      if (field === 'additionalOperations' && isPlainObject(value)) {
+        for (const operation of Object.values(value as Record<string, unknown>)) {
+          if (isPlainObject(operation) && !isExternalProtocolOperation(operation)) {
+            return true;
+          }
+        }
+        continue;
+      }
+      if (!OPENAPI_FIXED_HTTP_METHOD_SET.has(field.toLowerCase())) {
+        continue;
+      }
+      if (!isExternalProtocolOperation(value)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 const LOCAL_SCHEMA_REF_PREFIX = '#/components/schemas/';
+
+/**
+ * The v3 error envelope is part of every SDK's contract even when a spec's only
+ * problem+json references lived on a removed mirrored wire. Pruning must never
+ * drop it: the standard-profile validation requires ProblemDetail, and the
+ * generated clients expose its typed `code`/`traceId`.
+ */
+const ALWAYS_RETAINED_SCHEMAS = new Set([
+  'ProblemDetail',
+  'SdkWorkPlatformErrorCode',
+  'FieldError',
+]);
 
 /**
  * Component schemas whose only references lived inside the removed mirrored
@@ -111,7 +146,7 @@ function pruneSchemasOnlyTheRemovedWireReferenced(spec: ApiSpec): void {
     frontier = discovered;
   }
   for (const name of Object.keys(schemas)) {
-    if (!referenced.has(name)) {
+    if (!referenced.has(name) && !ALWAYS_RETAINED_SCHEMAS.has(name)) {
       delete schemas[name];
     }
   }
