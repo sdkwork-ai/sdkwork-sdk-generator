@@ -167,6 +167,51 @@ const wrappedTypedResponseSpec: ApiSpec = {
 };
 
 describe('Kotlin generator regressions', () => {
+  it('keeps required schema properties non-nullable in generated models', async () => {
+    const generator = getGenerator('kotlin' as any);
+    expect(generator).toBeDefined();
+
+    const result = await generator!.generate(kotlinConfig, {
+      openapi: '3.0.3',
+      info: {
+        title: 'Kotlin Required Field Regression',
+        version: '1.0.0',
+      },
+      paths: {
+        '/backend/v3/api/chat/completions': {
+          post: {
+            operationId: 'createChatCompletion',
+            responses: {
+              '200': { description: 'Success' },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          ChatCompletionRequest: {
+            type: 'object',
+            required: ['model', 'messages'],
+            properties: {
+              model: { type: 'string' },
+              messages: { type: 'array', items: { type: 'string' } },
+              user: { type: 'string' },
+            },
+          },
+        },
+      },
+    });
+    const requestModelFile = result.files.find(
+      (file) => file.path === 'src/main/kotlin/com/sdkwork/backend/ChatCompletionRequest.kt'
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(requestModelFile).toBeDefined();
+    expect(requestModelFile!.content).toContain('val model: String');
+    expect(requestModelFile!.content).toContain('val messages: List<String>');
+    expect(requestModelFile!.content).toContain('val user: String? = null');
+  });
+
   it('derives source package and artifact identity from packageName when namespace is absent', async () => {
     const generator = getGenerator('kotlin' as any);
     expect(generator).toBeDefined();

@@ -43,7 +43,7 @@ export class ModelGenerator {
     const className = KOTLIN_CONFIG.namingConventions.modelName(name);
     const baseClassName = variantBaseBySchemaName.get(name);
     const props = modelSchema.properties || {};
-    const required = baseClassName && Array.isArray(modelSchema.required)
+    const required = Array.isArray(modelSchema.required)
       ? new Set<string>(modelSchema.required)
       : new Set<string>();
 
