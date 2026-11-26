@@ -291,7 +291,22 @@ function runTypeScript(ctx) {
   const packageJson = loadJson(packageFile);
   const hasBuildScript = Boolean(packageJson?.scripts?.build);
 
-  run('pnpm', ['install'], { cwd: ctx.projectDir });
+  // Two install shapes are needed here:
+  //
+  // - a generated manifest that declares workspace-protocol dependencies must be
+  //   installed by the surrounding workspace, because only pnpm knows how to
+  //   resolve a workspace specifier;
+  // - generated output normally declares concrete versions, and then the build's
+  //   own tools (typescript, rollup) must be installed inside the package. A
+  //   plain workspace install resolves the repository root instead and leaves the
+  //   package without node_modules, which fails the build with
+  //   ERR_MODULE_NOT_FOUND for rollup.
+  const usesWorkspaceProtocol = readFileSync(packageFile, 'utf-8').includes('"workspace:');
+  if (usesWorkspaceProtocol) {
+    run('pnpm', ['install'], { cwd: ctx.projectDir });
+  } else {
+    run('pnpm', ['install', '--ignore-workspace', '--lockfile=false'], { cwd: ctx.projectDir });
+  }
   if (hasBuildScript) {
     run('npm', ['run', 'build'], { cwd: ctx.projectDir });
   } else {

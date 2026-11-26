@@ -199,7 +199,9 @@ describe('TypeScript build config generator', () => {
     expect(runDartStart).toBeGreaterThan(runTypeScriptStart);
 
     const runTypeScriptBody = publishCore.slice(runTypeScriptStart, runDartStart);
-    const installIndex = runTypeScriptBody.indexOf("run('pnpm', ['install'], { cwd: ctx.projectDir });");
+    const installIndex = runTypeScriptBody.indexOf(
+      "run('pnpm', ['install', '--ignore-workspace', '--lockfile=false'], { cwd: ctx.projectDir });",
+    );
     const buildIndex = runTypeScriptBody.indexOf("run('npm', ['run', 'build'], { cwd: ctx.projectDir });");
     const packIndex = runTypeScriptBody.indexOf('const packed = packTypeScriptProject(ctx.projectDir);');
 
